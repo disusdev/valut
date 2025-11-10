@@ -2,6 +2,8 @@
 
 A minimal, high-performance 3D graphics engine and software rasterizer written in C.
 
+<img src="./res/output.gif" width="400"/>
+
 ## Overview
 
 Xeno is a from-scratch 3D graphics engine that implements software rendering techniques. It includes a custom software rasterizer (`nude`), comprehensive math library, asset management system, and cross-platform windowing.
