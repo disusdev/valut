@@ -2,7 +2,9 @@
 
 A minimal, high-performance 3D graphics engine and software rasterizer written in C.
 
-<img src="./res/output.gif" width="400"/>
+<p align="center">
+    <img src="./res/output.gif" width="800"/>
+</p>
 
 ## Overview
 
@@ -183,3 +185,4 @@ This is a clean, minimal codebase designed for learning and experimentation. The
 ---
 
 *Built from scratch with C and software rendering techniques.*
+
