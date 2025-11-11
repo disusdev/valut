@@ -1,12 +1,9 @@
 .backup
 .vscode
+.zed
 *.wav
 *.pdb
 *.ilk
-
-# Asset packer generated files
 *.assets
 *_assets.c
-asset_packer.exe
-asset_test.exe
-pack.exe
+*.exe
