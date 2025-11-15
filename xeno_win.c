@@ -243,8 +243,8 @@ void
 platform_mouse_position_get(int* x, int* y) {
     POINT pt;
     GetCursorPos(&pt);
-    *x = pt.x;
-    *y = pt.y;
+    *x = pt.x - state.window_x;
+    *y = pt.y - state.window_y;
 }
 
 void
@@ -309,21 +309,21 @@ LRESULT CALLBACK win32_process_msg(HWND window, uint32_t msg, WPARAM w_param,
         e.ctx.u32[0] = 0;
         b_event_dispatch_ext(INPUT_BUTTON_DOWN, &e);
     } break;
-    
+
     case WM_LBUTTONUP:
     {
         event_t e;
         e.ctx.u32[0] = 0;
         b_event_dispatch_ext(INPUT_BUTTON_UP, &e);
     } break;
-    
+
     case WM_RBUTTONDOWN:
     {
         event_t e;
         e.ctx.u32[0] = 1;
         b_event_dispatch_ext(INPUT_BUTTON_DOWN, &e);
     } break;
-    
+
     case WM_RBUTTONUP:
     {
         event_t e;
@@ -381,14 +381,14 @@ int main(int argc, char** argv) {
             state.window_dirty = 0;
             SetWindowPos(state.handle, HWND_TOP, state.window_x, state.window_y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         }
-        
+
         // Set up a BITMAPINFO describing the framebuffer
         HDC hdc = GetDC(state.handle);
         SetDIBitsToDevice(hdc, 0, 0, state.game->width, state.game->height, 0, 0, 0,
             state.game->height, state.game->color, &state.bmi,
             DIB_RGB_COLORS);
         ReleaseDC(state.handle, hdc);
-        
+
 #ifdef ENABLE_SREC
         sprintf(text_buffer, ".scr/demo_%d.bmp", frame++);
         platform_screenshot_save(text_buffer);
