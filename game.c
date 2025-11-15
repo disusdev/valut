@@ -89,6 +89,50 @@ static asset_blob_t asset_blob = {0};
 static uint8_t* asset_data = NULL;
 static size_t asset_data_size = 0;
 
+vec3_t global_mesh_pos = {0};
+
+typedef struct {
+    vec3_t o;
+    vec3_t d;
+} ray_t;
+
+ray_t ray;
+
+ray_t ray_from_mouse(int x, int y, camera_t* camera)
+{
+    ray_t result;
+
+    float ndc_x = (2.0f * x) / game.width - 1.0f;
+    float ndc_y = 1.0f - (2.0f * y) / game.height;
+
+    mat4_t view = camera_view(camera);
+    mat4_t proj = camera_projection(camera, ASPECT_RATIO);
+
+    mat4_t inv_proj = m4_inv(proj);
+    mat4_t inv_view = m4_inv(view);
+
+    vec4_t ray_clip = {{ndc_x, ndc_y, -1.0f, 1.0f}};
+
+    vec4_t ray_view = m4_mul_v4(inv_proj, ray_clip);
+    ray_view.z = -1.0f;
+    ray_view.w = 0.0f;
+
+    vec4_t ray_world = m4_mul_v4(inv_view, ray_view);
+
+
+    result.o = camera->position;
+    result.d = (vec3_t){{ray_world.x, -ray_world.y, ray_world.z}};
+    result.d = v3_normalized(result.d);
+
+    return result;
+}
+
+vec3_t ray_intersect_xz(vec3_t origin, vec3_t direction) {
+    float t = -origin.y / direction.y;
+    vec3_t intersection = v3_add(origin, v3_scale(direction, t));
+    return intersection;
+}
+
 void
 assets_load(const char* path) {
     const char* asset_file = path;
@@ -179,15 +223,19 @@ g_term() {
     free(game.depth);
 }
 
+int activated = 0;
+
 void
 g_input(float dt) {
     if (input_get_button_down(BUTTON_MOUSE_LEFT)) {
+        activated = 1;
         input_get_mouse_pos(&mx, &my);
         platform_window_position_get(&wx, &wy);
     }
 
-    if (input_get_button(BUTTON_MOUSE_LEFT)) {
+    if (activated && input_get_button(BUTTON_MOUSE_LEFT)) {
         int x, y, dx, dy;
+        activated = 0;
         input_get_mouse_pos(&x, &y);
         dx = x - mx;
         dy = y - my;
@@ -243,6 +291,14 @@ g_input(float dt) {
     if (input_get_key_down(KEY_CODE_7)) {
         n_flag_toggle(DRAW_FLAG_FULLRECT);
     }
+
+    if (input_get_button(BUTTON_MOUSE_RIGHT)) {
+        int x, y;
+        input_get_mouse_pos(&x, &y);
+        ray = ray_from_mouse(x, y, current_camera);
+        vec3_t intersection = ray_intersect_xz(ray.o, ray.d);
+        global_mesh_pos = intersection;
+    }
 }
 
 void
@@ -277,7 +333,7 @@ g_update(float dt) {
 
     rotor3_t rot = r3_from_euler(0, 0, 0);
     mat4_t rot_mat = r3_rotate(rot);
-    game_state.ship_mesh.transform = rot_mat;
+    game_state.ship_mesh.transform = m4_translate(global_mesh_pos.x, global_mesh_pos.y, global_mesh_pos.z);
 
     framegraph_store(0, draw_time, platform_time_frame_get());
     float frame_ratio = get_frame_avg_ratio();
@@ -293,19 +349,23 @@ g_update(float dt) {
     n_grid_dot_draw(game.color, game.width, game.height, 10, TIME_ON_FRAME);
     n_mesh_draw(game.color, game.depth, game.width, game.height, game_state.ship_mesh, camera_view(current_camera), camera_projection(current_camera, ASPECT_RATIO));
 
-    /* FRAME STATISTICS */
-    const char* text = format_text("frame: %.1fms", platform_time_frame_get() * 1000);
-    int tx, ty;
-    n_text_size(text, 2, 2, &tx, &ty);
-    n_text_draw(game.color, WINDOW_ORIGIN.x - tx * 0.5, ty, text, 0xffffffff, 2, 2);
+    n_ctx_view_set(camera_view(current_camera));
+    n_ctx_proj_set(camera_projection(current_camera, ASPECT_RATIO));
+    n_draw_ray(game.color, ray.o, ray.d, 0x00ff00ff);
 
-    framegraph_draw(game.color, 1, 0xff00ff00);
+    if (input_get_key(KEY_CODE_SHIFT)) {
+        /* FRAME STATISTICS */
+        const char* text = format_text("frame: %.1fms", platform_time_frame_get() * 1000);
+        int tx, ty;
+        n_text_size(text, 2, 2, &tx, &ty);
+        n_text_draw(game.color, WINDOW_ORIGIN.x - tx * 0.5, ty, text, 0xffffffff, 2, 2);
 
-    text = format_text("draw: %.4fms", (platform_time_frame_get() * frame_ratio) * 1000);
-    n_text_size(text, 2, 2, &tx, &ty);
-    n_text_draw(game.color, SCREEN_WIDTH - tx - 10, ty / 2 + pos, text, 0xffffffff, 2, 2);
+        framegraph_draw(game.color, 1, 0xff00ff00);
 
-    n_text_format_draw(game.color, 100, 100, 0xffffffff, 2, 2, "%.1f", current_camera->pitch);
+        text = format_text("draw: %.4fms", (platform_time_frame_get() * frame_ratio) * 1000);
+        n_text_size(text, 2, 2, &tx, &ty);
+        n_text_draw(game.color, SCREEN_WIDTH - tx - 10, ty / 2 + pos, text, 0xffffffff, 2, 2);
+    }
 
     draw_buttons();
 
