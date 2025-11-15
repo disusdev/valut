@@ -15,12 +15,22 @@ static struct {
     int ox;
     int oy;
     float aspect;
+    mat4_t view;
+    mat4_t proj;
 } ctx = {
     0x00000000,
     1000, 1000,
     500, 500,
     1
 };
+
+void n_ctx_view_set(mat4_t mat) {
+    ctx.view = mat;
+}
+
+void n_ctx_proj_set(mat4_t mat) {
+    ctx.proj = mat;
+}
 
 static float
 edge_function_bar(float ax, float ay, float bx, float by, float cx, float cy) {
@@ -543,4 +553,28 @@ n_mesh_draw(uint32_t* color, float* depth,
             }
         }
     }
+}
+
+void
+n_draw_ray(uint32_t* buffer, vec3_t o, vec3_t d, uint32_t color) {
+    vec3_t end = v3_add(o, v3_scl(d, 100, 100, 100));
+
+    vec4_t v1 = m4_mul_v3_proj(ctx.view, o);
+    vec4_t v2 = m4_mul_v3_proj(ctx.view, end);
+
+    v1 = m4_mul_v4_proj(ctx.proj, v1);
+    v1.y *= -1;
+    v1.x *= ctx.ox;
+    v1.x += ctx.ox;
+    v1.y *= ctx.oy;
+    v1.y += ctx.oy;
+
+    v2 = m4_mul_v4_proj(ctx.proj, v2);
+    v2.y *= -1;
+    v2.x *= ctx.ox;
+    v2.x += ctx.ox;
+    v2.y *= ctx.oy;
+    v2.y += ctx.oy;
+
+    n_line2d_draw(buffer, (int)v1.x, (int)v1.y, (int)v2.x, (int)v2.y, color);
 }
