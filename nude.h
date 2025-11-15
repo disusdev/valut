@@ -35,6 +35,9 @@ typedef union {
     };
 } color_t;
 
+void n_ctx_view_set(mat4_t mat);
+void n_ctx_proj_set(mat4_t mat);
+
 void n_flag_toggle(drawing_flags_t flag);
 void n_size_set(int width, int height);
 void n_clear_color_set(uint32_t color);
@@ -52,6 +55,7 @@ void n_triangle_wire_draw(uint32_t* buffer, float x1, float y1, float x2, float 
 uint32_t n_color_percent(uint32_t color, float precent);
 uint32_t n_color_mix3(uint32_t c1, uint32_t c2, uint32_t c3);
 
+void n_draw_ray(uint32_t* buffer, vec3_t o, vec3_t d, uint32_t color);
 void n_mesh_draw(uint32_t* buffer, float* depth, int w, int h, mesh_t mesh, mat4_t view, mat4_t proj);
 void n_triangle_draw(uint32_t* buffer, float* depth, const void* texture, int x1, int y1, float z1, float w1, float u1, float v1, uint32_t c1, int x2, int y2, float z2, float w2, float u2, float v2, uint32_t c2, int x3, int y3, float z3, float w3, float u3, float v3, uint32_t c3);
 void n_triangle_tex_draw(uint32_t* color, float* depth, const void* texture, int x1, int y1, float z1, float w1, float u1, float v1, uint32_t c1, int x2, int y2, float z2, float w2, float u2, float v2, uint32_t c2, int x3, int y3, float z3, float w3, float u3, float v3, uint32_t c3);
