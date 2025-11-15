@@ -347,6 +347,48 @@ static INLINE mat4_t m4_look_at(vec3_t eye, vec3_t target, vec3_t up) {
     return res;
 }
 
+static INLINE mat4_t m4_inv(mat4_t a) {
+    float a00 = m4_get(a,0,0), a01 = m4_get(a,0,1), a02 = m4_get(a,0,2), a03 = m4_get(a,0,3);
+    float a10 = m4_get(a,1,0), a11 = m4_get(a,1,1), a12 = m4_get(a,1,2), a13 = m4_get(a,1,3);
+    float a20 = m4_get(a,2,0), a21 = m4_get(a,2,1), a22 = m4_get(a,2,2), a23 = m4_get(a,2,3);
+    float a30 = m4_get(a,3,0), a31 = m4_get(a,3,1), a32 = m4_get(a,3,2), a33 = m4_get(a,3,3);
+    float b00 = a11*(a22*a33 - a23*a32) - a12*(a21*a33 - a23*a31) + a13*(a21*a32 - a22*a31);
+    float b01 = a10*(a22*a33 - a23*a32) - a12*(a20*a33 - a23*a30) + a13*(a20*a32 - a22*a30);
+    float b02 = a10*(a21*a33 - a23*a31) - a11*(a20*a33 - a23*a30) + a13*(a20*a31 - a21*a30);
+    float b03 = a10*(a21*a32 - a22*a31) - a11*(a20*a32 - a22*a30) + a12*(a20*a31 - a21*a30);
+    float b10 = a01*(a22*a33 - a23*a32) - a02*(a21*a33 - a23*a31) + a03*(a21*a32 - a22*a31);
+    float b11 = a00*(a22*a33 - a23*a32) - a02*(a20*a33 - a23*a30) + a03*(a20*a32 - a22*a30);
+    float b12 = a00*(a21*a33 - a23*a31) - a01*(a20*a33 - a23*a30) + a03*(a20*a31 - a21*a30);
+    float b13 = a00*(a21*a32 - a22*a31) - a01*(a20*a32 - a22*a30) + a02*(a20*a31 - a21*a30);
+    float b20 = a01*(a12*a33 - a13*a32) - a02*(a11*a33 - a13*a31) + a03*(a11*a32 - a12*a31);
+    float b21 = a00*(a12*a33 - a13*a32) - a02*(a10*a33 - a13*a30) + a03*(a10*a32 - a12*a30);
+    float b22 = a00*(a11*a33 - a13*a31) - a01*(a10*a33 - a13*a30) + a03*(a10*a31 - a11*a30);
+    float b23 = a00*(a11*a32 - a12*a31) - a01*(a10*a32 - a12*a30) + a02*(a10*a31 - a11*a30);
+    float b30 = a01*(a12*a23 - a13*a22) - a02*(a11*a23 - a13*a21) + a03*(a11*a22 - a12*a21);
+    float b31 = a00*(a12*a23 - a13*a22) - a02*(a10*a23 - a13*a20) + a03*(a10*a22 - a12*a20);
+    float b32 = a00*(a11*a23 - a13*a21) - a01*(a10*a23 - a13*a20) + a03*(a10*a21 - a11*a20);
+    float b33 = a00*(a11*a22 - a12*a21) - a01*(a10*a22 - a12*a20) + a02*(a10*a21 - a11*a20);
+    float det = a00*b00 - a01*b01 + a02*b02 - a03*b03;
+    mat4_t result;
+    result.cols[0].rows[0] = b00 / det;
+    result.cols[0].rows[1] = -b10 / det;
+    result.cols[0].rows[2] = b20 / det;
+    result.cols[0].rows[3] = -b30 / det;
+    result.cols[1].rows[0] = -b01 / det;
+    result.cols[1].rows[1] = b11 / det;
+    result.cols[1].rows[2] = -b21 / det;
+    result.cols[1].rows[3] = b31 / det;
+    result.cols[2].rows[0] = b02 / det;
+    result.cols[2].rows[1] = -b12 / det;
+    result.cols[2].rows[2] = b22 / det;
+    result.cols[2].rows[3] = -b32 / det;
+    result.cols[3].rows[0] = -b03 / det;
+    result.cols[3].rows[1] = b13 / det;
+    result.cols[3].rows[2] = -b23 / det;
+    result.cols[3].rows[3] = b33 / det;
+    return result;
+}
+
 static INLINE rotor3_t r3_from_to(vec3_t from, vec3_t to) {
     from = v3_normalized(from);
     to = v3_normalized(to);
