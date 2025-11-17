@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 static drawing_flags_t flags = DRAW_FLAG_SHADE | DRAW_FLAG_CULLING | DRAW_FLAG_BACKFACE;
 
@@ -127,6 +128,65 @@ n_line2d_draw(unsigned int* buffer, int x1, int y1, int x2, int y2, unsigned int
     while (1)
     {
         if (!n_point_draw(buffer, x1, y1, color)) return;
+
+        if (x1 == x2 && y1 == y2) break;
+        int e2 = 2 * error;
+
+        if (e2 >= dy)
+        {
+            if (x1 == x2) break;
+            error = error + dy;
+            x1 = x1 + sx;
+        }
+
+        if (e2 <= dx)
+        {
+            if (y1 == y2) break;
+            error = error + dx;
+            y1 = y1 + sy;
+        }
+    }
+}
+
+void
+n_line2d_draw_gradient(unsigned int* buffer, int x1, int y1, int x2, int y2, unsigned int color1, unsigned int color2)
+{
+    int dx = mm_abs(x2 - x1);
+    int sx = x1 < x2 ? 1 : -1;
+    int dy = -mm_abs(y2 - y1);
+    int sy = y1 < y2 ? 1 : -1;
+    int error = dx + dy;
+
+    /* Calculate total distance for interpolation */
+    float total_distance = mm_sqrt((float)(dx * dx + dy * dy));
+    if (total_distance == 0.0f) {
+        n_point_draw(buffer, x1, y1, color1);
+        return;
+    }
+
+    /* Extract color components */
+    color_t c1 = { color1 };
+    color_t c2 = { color2 };
+
+    int start_x = x1;
+    int start_y = y1;
+
+    while (1)
+    {
+        /* Calculate interpolation factor based on distance from start */
+        int dist_x = x1 - start_x;
+        int dist_y = y1 - start_y;
+        float current_distance = mm_sqrt((float)(dist_x * dist_x + dist_y * dist_y));
+        float t = current_distance / total_distance;
+
+        /* Interpolate color components */
+        color_t current_color;
+        current_color.r = (uint8_t)lerp((float)c1.r, (float)c2.r, t);
+        current_color.g = (uint8_t)lerp((float)c1.g, (float)c2.g, t);
+        current_color.b = (uint8_t)lerp((float)c1.b, (float)c2.b, t);
+        current_color.a = (uint8_t)lerp((float)c1.a, (float)c2.a, t);
+
+        if (!n_point_draw(buffer, x1, y1, current_color.hex)) return;
 
         if (x1 == x2 && y1 == y2) break;
         int e2 = 2 * error;
@@ -447,8 +507,10 @@ n_mesh_draw(uint32_t* color, float* depth,
         return;
     }
 
+    /*
     int has_uvs = (mesh.uvs && mesh.uv_indices &&
-                   da_size(mesh.uvs) > 0 && da_size(mesh.uv_indices) > 0);
+                  da_size(mesh.uvs) > 0 && da_size(mesh.uv_indices) > 0);
+    */
 
     for (i = 0; i < mesh.indices->count; i += 3) {
         uint32_t* indices = da_get(mesh.indices, i);
@@ -576,5 +638,73 @@ n_draw_ray(uint32_t* buffer, vec3_t o, vec3_t d, uint32_t color) {
     v2.y *= ctx.oy;
     v2.y += ctx.oy;
 
-    n_line2d_draw(buffer, (int)v1.x, (int)v1.y, (int)v2.x, (int)v2.y, color);
+    n_line2d_draw_gradient(buffer, (int)v1.x, (int)v1.y, (int)v2.x, (int)v2.y, 0xff0000ff, color);
+}
+
+
+mesh_queue_t*
+nude_mesh_queue_create(void) {
+    mesh_queue_t* queue = (mesh_queue_t*)malloc(sizeof(mesh_queue_t));
+    if (!queue) return NULL;
+
+    queue->capacity = 32;
+    queue->count = 0;
+    queue->entries = (mesh_queue_entry_t*)malloc(sizeof(mesh_queue_entry_t) * queue->capacity);
+
+    if (!queue->entries) {
+        free(queue);
+        return NULL;
+    }
+
+    return queue;
+}
+
+void
+nude_mesh_queue_destroy(mesh_queue_t* queue) {
+    if (!queue) return;
+
+    if (queue->entries) {
+        free(queue->entries);
+    }
+    free(queue);
+}
+
+void
+nude_mesh_queue_clear(mesh_queue_t* queue) {
+    if (!queue) return;
+    queue->count = 0;
+}
+
+void
+nude_mesh_queue_add(mesh_queue_t* queue, mesh_t mesh, mat4_t view, mat4_t proj) {
+    if (!queue) return;
+
+    if (queue->count >= queue->capacity) {
+        int new_capacity = queue->capacity * 2;
+        mesh_queue_entry_t* new_entries = (mesh_queue_entry_t*)realloc(
+            queue->entries,
+            sizeof(mesh_queue_entry_t) * new_capacity
+        );
+
+        if (!new_entries) return; /* Failed to allocate, skip this entry */
+
+        queue->entries = new_entries;
+        queue->capacity = new_capacity;
+    }
+
+    queue->entries[queue->count].mesh = mesh;
+    queue->entries[queue->count].view = view;
+    queue->entries[queue->count].proj = proj;
+    queue->count++;
+}
+
+void
+nude_render(mesh_queue_t* queue, uint32_t* color, float* depth, int w, int h) {
+    if (!queue) return;
+
+    int i;
+    for (i = 0; i < queue->count; i++) {
+        mesh_queue_entry_t* entry = &queue->entries[i];
+        n_mesh_draw(color, depth, w, h, entry->mesh, entry->view, entry->proj);
+    }
 }

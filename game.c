@@ -34,6 +34,8 @@ struct {
     mesh_t ship_mesh;
 
     mesh_t planet_mesh;
+    
+    mesh_queue_t* mesh_queue;
 } game_state = {
     0
 };
@@ -202,6 +204,8 @@ g_init(const char* path) {
     framegraph_size_set(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     assets_load(path);
+    
+    game_state.mesh_queue = nude_mesh_queue_create();
 
     return &game;
 }
@@ -219,6 +223,9 @@ g_term() {
         free(asset_data);
         asset_data = NULL;
     }
+    
+    nude_mesh_queue_destroy(game_state.mesh_queue);
+    
     free(game.color);
     free(game.depth);
 }
@@ -347,7 +354,12 @@ g_update(float dt) {
     n_clear(game.color, game.depth);
 
     n_grid_dot_draw(game.color, game.width, game.height, 10, TIME_ON_FRAME);
-    n_mesh_draw(game.color, game.depth, game.width, game.height, game_state.ship_mesh, camera_view(current_camera), camera_projection(current_camera, ASPECT_RATIO));
+    
+    nude_mesh_queue_clear(game_state.mesh_queue);
+    
+    nude_mesh_queue_add(game_state.mesh_queue, game_state.ship_mesh, camera_view(current_camera), camera_projection(current_camera, ASPECT_RATIO));
+    
+    nude_render(game_state.mesh_queue, game.color, game.depth, game.width, game.height);
 
     n_ctx_view_set(camera_view(current_camera));
     n_ctx_proj_set(camera_projection(current_camera, ASPECT_RATIO));

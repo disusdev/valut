@@ -16,6 +16,18 @@ typedef enum {
 } drawing_flags_t;
 
 typedef struct {
+    mesh_t mesh;
+    mat4_t view;
+    mat4_t proj;
+} mesh_queue_entry_t;
+
+typedef struct {
+    mesh_queue_entry_t* entries;
+    int count;
+    int capacity;
+} mesh_queue_t;
+
+typedef struct {
     uint32_t* data;
     uint32_t width;
     uint32_t height;
@@ -45,6 +57,7 @@ void n_clear(uint32_t* buffer, float* depth);
 int n_point_draw(uint32_t* buffer, uint32_t x, uint32_t y, uint32_t color);
 int n_depth_set(float* buffer, unsigned int x, unsigned int y, float depth);
 void n_line2d_draw(uint32_t* buffer, int x1, int y1, int x2, int y2, uint32_t color);
+void n_line2d_draw_gradient(uint32_t* buffer, int x1, int y1, int x2, int y2, uint32_t color1, uint32_t color2);
 void n_texture_draw(uint32_t* buffer, int w, int h);
 
 void n_grid_line_draw(uint32_t* buffer, int w, int h, int size);
@@ -63,4 +76,15 @@ void n_triangle_fill_draw(uint32_t* color, float* depth, int x1, int y1, float z
 
 
 void n_mesh_draw_wireframe(texture2d_t* texture, const mesh_t* mesh, const mat4_t model, const mat4_t view, const mat4_t proj, unsigned int color);
+
+mesh_queue_t* nude_mesh_queue_create(void);
+
+void nude_mesh_queue_destroy(mesh_queue_t* queue);
+
+void nude_mesh_queue_clear(mesh_queue_t* queue);
+
+void nude_mesh_queue_add(mesh_queue_t* queue, mesh_t mesh, mat4_t view, mat4_t proj);
+
+void nude_render(mesh_queue_t* queue, uint32_t* color, float* depth, int w, int h);
+
 #endif
