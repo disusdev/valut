@@ -1,8 +1,7 @@
 #include "framegraph.h"
 #include "nude.h"
-#include <stdlib.h>
+#include "xeno.h"
 
-/* FRAME GRAPH */
 static int width;
 static int height;
 static int graph_scale = 1;
@@ -14,7 +13,7 @@ framegraph_size_set(int w, int h) {
     width = w;
     height = h;
     frame_index = w - 1;
-    frames = (int*) malloc( sizeof(int) * w );
+    frames = (int*) x_alloc( sizeof(int) * w, 0 );
 }
 
 void

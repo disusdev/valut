@@ -4,23 +4,6 @@
 #include "xeno.h"
 #include <stdint.h>
 
-static vec3_t
-make_v3(float x,
-        float y,
-        float z)
-{
-    vec3_t v = { x, y, z };
-    return v;
-}
-
-static vec2_t
-make_v2(float x,
-        float y)
-{
-    vec2_t v = { x, y };
-    return v;
-}
-
 float BOX_VERTICES[8 * 3] = {
     -1, -1, -1,
     -1,  1, -1,
@@ -63,7 +46,7 @@ mesh_create_box(float width,
     };
     da_resize(m.vertices, sizeof BOX_VERTICES / sizeof BOX_VERTICES[0]);
     da_resize(m.indices, sizeof BOX_INDICES / sizeof BOX_INDICES[0]);
-    platform_mem_copy(m.vertices->data, BOX_VERTICES, m.vertices->count * m.vertices->stride);
-    platform_mem_copy(m.indices->data, BOX_INDICES, m.indices->count * m.indices->stride);
+    x_mem_copy(m.vertices->data, BOX_VERTICES, m.vertices->count * m.vertices->stride);
+    x_mem_copy(m.indices->data, BOX_INDICES, m.indices->count * m.indices->stride);
     return m;
 }

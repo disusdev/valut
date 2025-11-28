@@ -1,8 +1,9 @@
 #include "text.h"
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdio.h>
 #include "nude.h"
+
+#include <stdio.h>
 
 typedef struct {
     char ch;
@@ -91,13 +92,43 @@ static const GlyphEntry pixel_font[] = {
     { '=', { 0x00,0x00,0x7E,0x00,0x7E,0x00,0x00,0x00 } },
 
     { '?', { 0x3C,0x66,0x06,0x0C,0x18,0x00,0x18,0x00 } },
+
+    { '(', { 0x0E,0x18,0x30,0x30,0x30,0x18,0x0E,0x00 } },
+    { ')', { 0x70,0x18,0x0C,0x0C,0x0C,0x18,0x70,0x00 } },
+
+    { '[', { 0x3C,0x30,0x30,0x30,0x30,0x30,0x3C,0x00 } },
+    { ']', { 0x3C,0x0C,0x0C,0x0C,0x0C,0x0C,0x3C,0x00 } },
+
+    { '{', { 0x0E,0x18,0x18,0x70,0x18,0x18,0x0E,0x00 } },
+    { '}', { 0x70,0x18,0x18,0x0E,0x18,0x18,0x70,0x00 } },
+
+    { '/', { 0x06,0x0C,0x18,0x30,0x60,0xC0,0x80,0x00 } },
+    { '\\', { 0xC0,0x60,0x30,0x18,0x0C,0x06,0x02,0x00 } },
+
+    { '*', { 0x00,0x66,0x3C,0xFF,0x3C,0x66,0x00,0x00 } },
+    { '#', { 0x6C,0x6C,0xFE,0x6C,0xFE,0x6C,0x6C,0x00 } },
+    { '@', { 0x3C,0x66,0xCE,0xD6,0xD6,0xC0,0x7E,0x00 } },
+    { '$', { 0x18,0x7E,0xC0,0x7C,0x06,0xFC,0x18,0x00 } },
+    { '%', { 0xC2,0xC6,0x0C,0x18,0x30,0x66,0x46,0x00 } },
+    { '&', { 0x38,0x6C,0x6C,0x38,0x6D,0xC6,0x7B,0x00 } },
+
+    { '"', { 0x66,0x66,0x44,0x00,0x00,0x00,0x00,0x00 } },
+    { '\'', { 0x18,0x18,0x10,0x00,0x00,0x00,0x00,0x00 } },
+
+    { '<', { 0x0E,0x1C,0x38,0x70,0x38,0x1C,0x0E,0x00 } },
+    { '>', { 0x70,0x38,0x1C,0x0E,0x1C,0x38,0x70,0x00 } },
+
+    { '|', { 0x18,0x18,0x18,0x18,0x18,0x18,0x18,0x00 } },
+    { '^', { 0x18,0x3C,0x66,0x00,0x00,0x00,0x00,0x00 } },
+    { '~', { 0x00,0x00,0x32,0x4C,0x00,0x00,0x00,0x00 } },
 };
 
 static const size_t pixel_font_count = sizeof(pixel_font) / sizeof(pixel_font[0]);
 
 static char TEXT_BUFFER[1024] = {0};
 
-const char* format_text(const char* format, ...) {
+const char*
+format_text(const char* format, ...) {
     va_list args;
     va_start(args, format);
     vsprintf(TEXT_BUFFER, format, args);
@@ -105,7 +136,8 @@ const char* format_text(const char* format, ...) {
     return TEXT_BUFFER;
 }
 
-static const uint8_t* get_glyph_for_char(char c) {
+static const uint8_t*
+get_glyph_for_char(char c) {
     size_t i;
     for (i = 0; i < pixel_font_count; ++i) {
         if (pixel_font[i].ch == c) return pixel_font[i].glyph;
@@ -115,7 +147,11 @@ static const uint8_t* get_glyph_for_char(char c) {
     return pixel_font[0].glyph;
 }
 
-void n_glyph_draw(uint32_t* buffer, int x0, int y0, const uint8_t glyph[8], uint32_t color, int scale) {
+void
+n_glyph_draw(uint32_t* buffer,
+             int x0, int y0,
+             const uint8_t glyph[8],
+             uint32_t color, int scale) {
     int col, row;
     for (col = 0; col < 8; ++col) {
         uint8_t colbits = glyph[col];
@@ -128,7 +164,13 @@ void n_glyph_draw(uint32_t* buffer, int x0, int y0, const uint8_t glyph[8], uint
     }
 }
 
-void n_text_draw(uint32_t* buffer, int x, int y, const char* text, uint32_t color, int scale, int spacing) {
+void
+n_text_draw(uint32_t* buffer,
+            int x, int y,
+            const char* text,
+            uint32_t color,
+            int scale,
+            int spacing) {
     int cursor_x = x;
     const char* p;
     for (p = text; *p; ++p) {
@@ -138,7 +180,13 @@ void n_text_draw(uint32_t* buffer, int x, int y, const char* text, uint32_t colo
     }
 }
 
-void n_text_format_draw(uint32_t* buffer, int x, int y, uint32_t color, int scale, int spacing, const char* format, ...) {
+void
+n_text_format_draw(uint32_t* buffer,
+                   int x, int y,
+                   uint32_t color,
+                   int scale,
+                   int spacing,
+                   const char* format, ...) {
     va_list args;
     va_start(args, format);
     vsprintf(TEXT_BUFFER, format, args);
@@ -149,12 +197,15 @@ void n_text_format_draw(uint32_t* buffer, int x, int y, uint32_t color, int scal
 }
 
 void
-n_text_size(const char* text, int scale, int spacing, int* w, int* h) {
+n_text_size(const char* text,
+            int scale,
+            int spacing,
+            int* w, int* h) {
     int cursor_x = 0;
     int cursor_y = 8 * scale * 0.5 * vscale;
     const char* p;
     for (p = text; *p; ++p) {
-        const uint8_t* g = get_glyph_for_char(*p);
+        /* const uint8_t* g = */ get_glyph_for_char(*p);
         cursor_x += 8 * scale + spacing;
     }
     *w = cursor_x;

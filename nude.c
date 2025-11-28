@@ -2,10 +2,8 @@
 #include "collision.h"
 #include "mm.h"
 #include "texture.h"
-#include <assert.h>
+#include "xeno.h"
 #include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
 
 static drawing_flags_t flags = DRAW_FLAG_SHADE | DRAW_FLAG_CULLING | DRAW_FLAG_BACKFACE;
 
@@ -92,7 +90,10 @@ n_clear_color_set(unsigned int color) {
 void
 n_clear(unsigned int* buffer, float* depth) {
     unsigned int count = ctx.width * ctx.height;
-    memset(buffer, ctx.clear_color, count * sizeof(unsigned int));
+    int i;
+    for (i = 0; i < count; i++) {
+        buffer[i] = ctx.clear_color;
+    }
     if (depth) {
         int i;
         for (i = 0; i < count; i++) {
@@ -644,15 +645,15 @@ n_draw_ray(uint32_t* buffer, vec3_t o, vec3_t d, uint32_t color) {
 
 mesh_queue_t*
 nude_mesh_queue_create(void) {
-    mesh_queue_t* queue = (mesh_queue_t*)malloc(sizeof(mesh_queue_t));
+    mesh_queue_t* queue = (mesh_queue_t*)x_alloc(sizeof(mesh_queue_t), 0);
     if (!queue) return NULL;
 
     queue->capacity = 32;
     queue->count = 0;
-    queue->entries = (mesh_queue_entry_t*)malloc(sizeof(mesh_queue_entry_t) * queue->capacity);
+    queue->entries = (mesh_queue_entry_t*)x_alloc(sizeof(mesh_queue_entry_t) * queue->capacity, 0);
 
     if (!queue->entries) {
-        free(queue);
+        x_free(queue, 0);
         return NULL;
     }
 
@@ -664,9 +665,9 @@ nude_mesh_queue_destroy(mesh_queue_t* queue) {
     if (!queue) return;
 
     if (queue->entries) {
-        free(queue->entries);
+        x_free(queue->entries, 0);
     }
-    free(queue);
+    x_free(queue, 0);
 }
 
 void
@@ -681,12 +682,13 @@ nude_mesh_queue_add(mesh_queue_t* queue, mesh_t mesh, mat4_t view, mat4_t proj) 
 
     if (queue->count >= queue->capacity) {
         int new_capacity = queue->capacity * 2;
-        mesh_queue_entry_t* new_entries = (mesh_queue_entry_t*)realloc(
+        mesh_queue_entry_t* new_entries = (mesh_queue_entry_t*)x_realloc(
             queue->entries,
-            sizeof(mesh_queue_entry_t) * new_capacity
+            sizeof(mesh_queue_entry_t) * new_capacity,
+            0
         );
 
-        if (!new_entries) return; /* Failed to allocate, skip this entry */
+        if (!new_entries) return;
 
         queue->entries = new_entries;
         queue->capacity = new_capacity;

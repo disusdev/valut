@@ -2,6 +2,8 @@
 #include "mesh.h"
 #include "mm.h"
 #include <stdint.h>
+
+/* @fixit should be used platform funcitons */
 #include <stdio.h>
 
 #define BUFFER_LENGTH 1024
@@ -58,7 +60,7 @@ mesh_obj_load(const char* file_path) {
                 da_add(mesh.indices, &indices_cache[1]);
                 da_add(mesh.indices, &indices_cache[2]);
             } else {
-                matches = sscanf(buffer, "f %d/%d/%d %d/%d/%d %d/%d/%d\n", 
+                matches = sscanf(buffer, "f %d/%d/%d %d/%d/%d %d/%d/%d\n",
                     &indices_cache[0], &indices_cache[1], &indices_cache[2],
                     &indices_cache[3], &indices_cache[4], &indices_cache[5],
                     &indices_cache[6], &indices_cache[7], &indices_cache[8]);
@@ -70,7 +72,7 @@ mesh_obj_load(const char* file_path) {
                     da_add(mesh.uv_indices, &indices_cache[4]);
                     da_add(mesh.uv_indices, &indices_cache[7]);
                 } else {
-                    matches = sscanf(buffer, "f %d/%d %d/%d %d/%d\n", 
+                    matches = sscanf(buffer, "f %d/%d %d/%d %d/%d\n",
                         &indices_cache[0], &indices_cache[1], &indices_cache[2],
                         &indices_cache[3], &indices_cache[4], &indices_cache[5]);
                     if (matches == 6) {

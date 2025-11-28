@@ -17,7 +17,6 @@ typedef struct {
 } mesh_t;
 
 mesh_t mesh_create_box(float width, float height, float depth);
-
 mesh_t mesh_obj_load(const char* file_path);
 
 #endif

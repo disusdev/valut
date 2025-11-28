@@ -5,7 +5,7 @@
 
 typedef struct {
     unsigned int target_fps;
-
+    uint32_t flags;
     uint32_t* color;
     float* depth;
     int width;

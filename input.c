@@ -11,14 +11,14 @@ static struct {
     uint64_t keys_up[KEYS_COUNT];
     uint64_t keys_hold[KEYS_COUNT];
     uint64_t keys_prev_hold[KEYS_COUNT];
-    
+
     uint64_t buttons_down[KEYS_COUNT];
     uint64_t buttons_up[KEYS_COUNT];
     uint64_t buttons_hold[KEYS_COUNT];
     uint64_t buttons_prev_hold[KEYS_COUNT];
-    
+
     uint8_t char_trigger;
-    
+
     int32_t mouse_x;
     int32_t mouse_y;
 } ctx = {0};
@@ -57,13 +57,13 @@ input_update()
         ctx.keys_down[k] = (ctx.keys_hold[k] ^ ctx.keys_prev_hold[k]) & ctx.keys_hold[k];
         ctx.keys_up[k] = (ctx.keys_hold[k] ^ ctx.keys_prev_hold[k]) & ctx.keys_prev_hold[k];
         ctx.keys_prev_hold[k] = ctx.keys_hold[k];
-        
+
         ctx.buttons_down[k] = (ctx.buttons_hold[k] ^ ctx.buttons_prev_hold[k]) & ctx.buttons_hold[k];
         ctx.buttons_up[k] = (ctx.buttons_hold[k] ^ ctx.buttons_prev_hold[k]) & ctx.buttons_prev_hold[k];
         ctx.buttons_prev_hold[k] = ctx.buttons_hold[k];
     }
 
-    platform_mouse_position_get(&ctx.mouse_x, &ctx.mouse_y);
+    x_mouse_position_get(&ctx.mouse_x, &ctx.mouse_y);
 }
 
 uint64_t

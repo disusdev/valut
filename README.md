@@ -122,7 +122,6 @@ The demo runs at 800x800 resolution and includes:
 | 4 | Toggle culling |
 | 5 | Toggle backface |
 | 6 | Toggle normals |
-| F12 | Screenshot |
 | ESC | Quit |
 
 ### Code Example
@@ -185,4 +184,3 @@ This is a clean, minimal codebase designed for learning and experimentation. The
 ---
 
 *Built from scratch with C and software rendering techniques.*
-

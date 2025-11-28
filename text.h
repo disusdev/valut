@@ -1,7 +1,6 @@
 #ifndef __TEXT_H__
 #define __TEXT_H__
 
-#include "nude.h"
 #include <stdint.h>
 
 const char* format_text(const char* format, ...);

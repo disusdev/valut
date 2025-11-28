@@ -1,9 +1,11 @@
 #include "texture.h"
 #include "asset_loader.h"
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include "darray.h"
+
+/* @fixit should use xeno functions */
+#include <stdio.h>
 
 #define MAX_TEXTURES 8
 darray_t* textures_raw[MAX_TEXTURES];
@@ -12,7 +14,7 @@ int textures_count = 0;
 uint32_t
 texture_get_color(float u, float v) {
     if (textures_count == 0 || textures_raw[0] == NULL) {
-        return 0xFFFFFFFF; // White fallback
+        return 0xFFFFFFFF;
     }
     darray_t* texture = textures_raw[0];
     const uint32_t* raw = da_get(texture, 0);
@@ -28,11 +30,9 @@ texture_get_color(float u, float v) {
 
 uint32_t
 texture_get_color_from_asset(const struct asset_texture_t* texture, float u, float v) {
-    /* Use asset loader texture if provided */
     if (texture) {
         return asset_texture_get_color((const asset_texture_t*)texture, u, v);
     }
-    /* Fallback to legacy texture system */
     return texture_get_color(u, v);
 }
 

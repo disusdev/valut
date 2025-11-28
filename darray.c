@@ -1,9 +1,11 @@
 #include "darray.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include "xeno.h"
 
-darray_t* da_create(size_t stride) {
-    darray_t* arr = (darray_t*)malloc(sizeof(darray_t));
+darray_t*
+da_create(size_t stride) {
+    darray_t* arr = (darray_t*)x_alloc(sizeof(darray_t), 0);
     if (!arr) return NULL;
     arr->data = NULL;
     arr->count = 0;
@@ -12,13 +14,16 @@ darray_t* da_create(size_t stride) {
     return arr;
 }
 
-void da_destroy(darray_t* arr) {
+void
+da_destroy(darray_t* arr) {
     if (!arr) return;
-    if (arr->data) free(arr->data);
-    free(arr);
+    if (arr->data) x_free(arr->data, 0);
+    x_free(arr, 0);
 }
 
-int da_reserve(darray_t* da, size_t cap) {
+int
+da_reserve(darray_t* da,
+           size_t cap) {
     if (!da) return 0;
     if (cap <= da->capacity) return 1;
     void* new_data = realloc(da->data, cap * da->stride);
@@ -29,14 +34,17 @@ int da_reserve(darray_t* da, size_t cap) {
 }
 
 void
-da_resize(darray_t* da, size_t count) {
+da_resize(darray_t* da,
+          size_t count) {
     if (count >= da->capacity) {
         da_reserve(da, count);
     }
     da->count = count;
 }
 
-int da_add(darray_t* da, const void* elem) {
+int
+da_add(darray_t* da,
+       const void* elem) {
     if (!da || !elem) return 0;
     if (da->count == da->capacity) {
         size_t new_cap = da->capacity ? da->capacity * 2 : 4;
@@ -52,12 +60,17 @@ int da_add(darray_t* da, const void* elem) {
     return 1;
 }
 
-void* da_get(darray_t* da, size_t idx) {
+void*
+da_get(darray_t* da,
+       size_t idx) {
     if (!da || idx >= da->count) return NULL;
     return (char*)da->data + idx * da->stride;
 }
 
-int da_set(darray_t* da, size_t idx, const void* elem) {
+int
+da_set(darray_t* da,
+       size_t idx,
+       const void* elem) {
     if (!da || !elem || idx >= da->count) return 0;
     char* dest = (char*)da->data + idx * da->stride;
     const char* src = (const char*)elem;
@@ -68,12 +81,14 @@ int da_set(darray_t* da, size_t idx, const void* elem) {
     return 1;
 }
 
-size_t da_size(const darray_t* da) {
+size_t
+da_size(const darray_t* da) {
     if (!da) return 0;
     return da->count;
 }
 
-void da_clear(darray_t* da) {
+void
+da_clear(darray_t* da) {
     if (!da) return;
     da->count = 0;
 }

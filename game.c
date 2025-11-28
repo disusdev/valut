@@ -34,11 +34,9 @@ struct {
     mesh_t ship_mesh;
 
     mesh_t planet_mesh;
-    
+
     mesh_queue_t* mesh_queue;
-} game_state = {
-    0
-};
+} game_state = { 0 };
 
 struct {
     vec3_t direction;
@@ -100,8 +98,10 @@ typedef struct {
 
 ray_t ray;
 
-ray_t ray_from_mouse(int x, int y, camera_t* camera)
-{
+ray_t
+ray_from_mouse(int x,
+               int y,
+               camera_t* camera) {
     ray_t result;
 
     float ndc_x = (2.0f * x) / game.width - 1.0f;
@@ -129,7 +129,9 @@ ray_t ray_from_mouse(int x, int y, camera_t* camera)
     return result;
 }
 
-vec3_t ray_intersect_xz(vec3_t origin, vec3_t direction) {
+vec3_t
+ray_intersect_xz(vec3_t origin,
+                 vec3_t direction) {
     float t = -origin.y / direction.y;
     vec3_t intersection = v3_add(origin, v3_scale(direction, t));
     return intersection;
@@ -137,33 +139,10 @@ vec3_t ray_intersect_xz(vec3_t origin, vec3_t direction) {
 
 void
 assets_load(const char* path) {
-    const char* asset_file = path;
-    FILE* f = fopen(asset_file, "rb");
-    if (!f) {
-        printf("Warning: Could not open asset file '%s'. Creating empty scene.\n", asset_file);
-        printf("Please run asset_packer.exe to create an asset file.\n");
-        return;
-    }
+    asset_data_size = x_file_size(path);
 
-    fseek(f, 0, SEEK_END);
-    asset_data_size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    asset_data = malloc(asset_data_size);
-    if (!asset_data) {
-        printf("Failed to allocate memory for asset data\n");
-        fclose(f);
-        return;
-    }
-
-    size_t read = fread(asset_data, 1, asset_data_size, f);
-    fclose(f);
-
-    if (read != asset_data_size) {
-        printf("Failed to read asset file completely\n");
-        fclose(f);
-        return;
-    }
+    asset_data = x_alloc(asset_data_size, 0);
+    asset_data = x_file_read(path, asset_data, asset_data_size);
 
     if (!asset_blob_init(&asset_blob, asset_data, (uint32_t)asset_data_size)) {
         printf("Failed to initialize asset blob\n");
@@ -190,8 +169,6 @@ g_init(const char* path) {
     game.target_fps = 60;
     game.width = SCREEN_WIDTH;
     game.height = SCREEN_HEIGHT;
-    game.color = malloc(sizeof(unsigned int) * SCREEN_WIDTH * SCREEN_HEIGHT);
-    game.depth = malloc(sizeof(float) * SCREEN_WIDTH * SCREEN_HEIGHT);
 
     ASPECT_RATIO = (float) game.height / game.width;
     WINDOW_ORIGIN = (vec2_t) {{ (float) game.width / 2, (float) game.height / 2 }};
@@ -204,7 +181,7 @@ g_init(const char* path) {
     framegraph_size_set(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     assets_load(path);
-    
+
     game_state.mesh_queue = nude_mesh_queue_create();
 
     return &game;
@@ -220,54 +197,53 @@ g_term() {
     da_destroy(game_state.ship_mesh.uv_indices);
 
     if (asset_data) {
-        free(asset_data);
+        x_free(asset_data, 0);
         asset_data = NULL;
     }
-    
+
     nude_mesh_queue_destroy(game_state.mesh_queue);
-    
-    free(game.color);
-    free(game.depth);
 }
 
 int activated = 0;
 
 void
 g_input(float dt) {
-    if (input_get_button_down(BUTTON_MOUSE_LEFT)) {
-        activated = 1;
-        input_get_mouse_pos(&mx, &my);
-        platform_window_position_get(&wx, &wy);
-    }
-
-    if (activated && input_get_button(BUTTON_MOUSE_LEFT)) {
-        int x, y, dx, dy;
-        activated = 0;
-        input_get_mouse_pos(&x, &y);
-        dx = x - mx;
-        dy = y - my;
-        platform_window_position_set(wx + dx, wy + dy);
-    }
+    if (input_get_key(KEY_CODE_SHIFT)) {
+        if (input_get_button_down(BUTTON_MOUSE_LEFT)) {
+            activated = 1;
+            input_get_mouse_pos(&mx, &my);
+            x_window_position_get(&wx, &wy);
+        }
+        if (activated && input_get_button(BUTTON_MOUSE_LEFT)) {
+            printf("SHIFT");
+            int x, y, dx, dy;
+            activated = 0;
+            input_get_mouse_pos(&x, &y);
+            dx = x - mx;
+            dy = y - my;
+            x_window_position_set(wx + dx, wy + dy);
+        }
+    } else { activated = 0; }
 
     if (input_get_key_down(KEY_CODE_O)) {
         TIME_SCALE *= 0.5;
         TIME_SCALE = MAX(0, TIME_SCALE);
-        platform_time_scale_set(TIME_SCALE);
+        x_time_scale_set(TIME_SCALE);
     }
 
     if (input_get_key_down(KEY_CODE_P)) {
         TIME_SCALE *= 2;
         TIME_SCALE = MIN(TIME_SCALE, 100);
-        platform_time_scale_set(TIME_SCALE);
+        x_time_scale_set(TIME_SCALE);
     }
 
     if(input_get_key(KEY_CODE_ESC)) {
-        b_event_dispatch(GAME_QUIT);
+        b_event_dispatch(APP_QUIT);
     }
 
 #ifdef ENABLE_SREC
     if (TIME_ON_FRAME > 3.0) {
-        b_event_dispatch(GAME_QUIT);
+        b_event_dispatch(APP_QUIT);
     }
 #endif
 
@@ -329,8 +305,8 @@ draw_buttons() {
 
 void
 g_update(float dt) {
-    double start_frame = platform_get_absolute_time();
-    TIME_ON_FRAME = platform_get_time();
+    double start_frame = x_get_absolute_time();
+    TIME_ON_FRAME = x_get_time();
 
     g_input(dt);
 
@@ -342,23 +318,23 @@ g_update(float dt) {
     mat4_t rot_mat = r3_rotate(rot);
     game_state.ship_mesh.transform = m4_translate(global_mesh_pos.x, global_mesh_pos.y, global_mesh_pos.z);
 
-    framegraph_store(0, draw_time, platform_time_frame_get());
+    framegraph_store(0, draw_time, x_time_frame_get());
     float frame_ratio = get_frame_avg_ratio();
     int pos = last_frame_pos(frame_ratio);
 
     /* END OF THE UPDATE */
-    update_time = platform_get_absolute_time() - start_frame;
+    update_time = x_get_absolute_time() - start_frame;
 
     n_clear_color_set(0xff000000);
     n_size_set(game.width, game.height);
     n_clear(game.color, game.depth);
 
     n_grid_dot_draw(game.color, game.width, game.height, 10, TIME_ON_FRAME);
-    
+
     nude_mesh_queue_clear(game_state.mesh_queue);
-    
+
     nude_mesh_queue_add(game_state.mesh_queue, game_state.ship_mesh, camera_view(current_camera), camera_projection(current_camera, ASPECT_RATIO));
-    
+
     nude_render(game_state.mesh_queue, game.color, game.depth, game.width, game.height);
 
     n_ctx_view_set(camera_view(current_camera));
@@ -367,14 +343,14 @@ g_update(float dt) {
 
     if (input_get_key(KEY_CODE_SHIFT)) {
         /* FRAME STATISTICS */
-        const char* text = format_text("frame: %.1fms", platform_time_frame_get() * 1000);
+        const char* text = format_text("frame: %.1fms", x_time_frame_get() * 1000);
         int tx, ty;
         n_text_size(text, 2, 2, &tx, &ty);
         n_text_draw(game.color, WINDOW_ORIGIN.x - tx * 0.5, ty, text, 0xffffffff, 2, 2);
 
         framegraph_draw(game.color, 1, 0xff00ff00);
 
-        text = format_text("draw: %.4fms", (platform_time_frame_get() * frame_ratio) * 1000);
+        text = format_text("draw: %.4fms", (x_time_frame_get() * frame_ratio) * 1000);
         n_text_size(text, 2, 2, &tx, &ty);
         n_text_draw(game.color, SCREEN_WIDTH - tx - 10, ty / 2 + pos, text, 0xffffffff, 2, 2);
     }
@@ -382,5 +358,5 @@ g_update(float dt) {
     draw_buttons();
 
     /* END OF DRAW */
-    draw_time = platform_get_absolute_time() - start_frame;
+    draw_time = x_get_absolute_time() - start_frame;
 }

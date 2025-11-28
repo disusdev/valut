@@ -8,19 +8,19 @@
 #include <windows.h>
 #include "event.h"
 #include "input.h"
-
+#include "error.h"
 
 #include <mmsystem.h>
 #include <winnt.h>
 #include <winuser.h>
 #pragma comment(lib, "winmm.lib")
 
-// #define ENABLE_SREC
+/* #define ENABLE_SREC */
 
 #define true 1
 #define false 0
 
-typedef struct system_state {
+static struct {
     HINSTANCE instance;
     HWND handle;
     BITMAPINFO bmi;
@@ -39,20 +39,17 @@ typedef struct system_state {
 
     HWAVEOUT hWaveOut;
     WAVEHDR hdr;
-} system_state;
-
-static system_state state;
+} state;
 
 static LARGE_INTEGER frequency;
 static double clock_frequency;
 static double awake_time;
 
-LRESULT CALLBACK win32_process_msg(HWND window,
-                                   uint32_t msg,
-                                   WPARAM w_param,
-                                   LPARAM l_param);
+LRESULT CALLBACK win32_process_msg(HWND window, uint32_t msg, WPARAM w_param, LPARAM l_param);
 
-void platform_audio_init(int sampleRate, int channels) {
+void
+x_audio_init(int sampleRate,
+             int channels) {
     WAVEFORMATEX wfx = {0};
     wfx.wFormatTag = WAVE_FORMAT_PCM;
     wfx.nChannels = channels;
@@ -61,12 +58,17 @@ void platform_audio_init(int sampleRate, int channels) {
     wfx.nBlockAlign = (wfx.wBitsPerSample / 8) * channels;
     wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
 
-    if (waveOutOpen(&state.hWaveOut, WAVE_MAPPER, &wfx, 0, 0, CALLBACK_NULL) != MMSYSERR_NOERROR) {
+    if (waveOutOpen(&state.hWaveOut,
+                    WAVE_MAPPER, &wfx,
+                    0, 0, CALLBACK_NULL) != MMSYSERR_NOERROR) {
         MessageBox(NULL, "Failed to open audio device", "Error", MB_OK);
     }
 }
 
-void platform_play_frame(short *samples, int sample_count, int channels) {
+void
+x_play_frame(short *samples,
+                int sample_count,
+                int channels) {
     int dataSize = sample_count * sizeof(short) * channels;
 
     state.hdr.lpData = (LPSTR)samples;
@@ -76,16 +78,15 @@ void platform_play_frame(short *samples, int sample_count, int channels) {
     waveOutWrite(state.hWaveOut, &state.hdr, sizeof(WAVEHDR));
 }
 
-void platform_init(const char *app_name,
-                   int32_t x,
-                   int32_t y,
-                   int32_t width,
-                   int32_t height) {
+void
+x_init(const char *app_name,
+       int32_t x, int32_t y,
+       int32_t width, int32_t height) {
     state.instance = GetModuleHandleA(0);
 
     HICON icon = LoadIcon(state.instance, IDI_APPLICATION);
     WNDCLASS wc;
-    platform_mem_set(&wc, 0, sizeof(wc));
+    x_mem_set(&wc, 0, sizeof(wc));
     wc.style = CS_DBLCLKS;
     wc.lpfnWndProc = win32_process_msg;
     wc.cbClsExtra = 0;
@@ -119,10 +120,10 @@ void platform_init(const char *app_name,
 
     window_style |= WS_MAXIMIZEBOX;
     window_style |= WS_MINIMIZEBOX;
-    // window_style |= WS_THICKFRAME;
+    /* window_style |= WS_THICKFRAME; */
 
-    // uint32_t aero_borderless  = WS_POPUP            | WS_THICKFRAME | WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
-    RECT border_rect = {0, 0, 0, 0};
+    /* uint32_t aero_borderless  = WS_POPUP            | WS_THICKFRAME | WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX; */
+    RECT border_rect = { 0, 0, 0, 0 };
     AdjustWindowRectEx(&border_rect, window_style, 0, window_ex_style);
 
     window_x += border_rect.left;
@@ -136,8 +137,8 @@ void platform_init(const char *app_name,
     state.window_dirty = 0;
 
     HWND handle = CreateWindowExA(window_ex_style, "window_class", app_name,
-        window_style, window_x, window_y, window_w,
-                                window_h, 0, 0, state.instance, 0);
+                                  window_style, window_x, window_y, window_w,
+                                  window_h, 0, 0, state.instance, 0);
 
     if (handle == NULL) {
         printf("Window creation failed!\n");
@@ -153,22 +154,22 @@ void platform_init(const char *app_name,
 
     QueryPerformanceFrequency(&frequency);
     clock_frequency = 1.0 / (double)frequency.QuadPart;
-    awake_time = platform_get_absolute_time();
+    awake_time = x_get_absolute_time();
 
     state.bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     state.bmi.bmiHeader.biWidth = state.game->width;
-    state.bmi.bmiHeader.biHeight = -state.game->height; // top-down
+    state.bmi.bmiHeader.biHeight = -state.game->height;
     state.bmi.bmiHeader.biPlanes = 1;
     state.bmi.bmiHeader.biBitCount = 32;
     state.bmi.bmiHeader.biCompression = BI_RGB;
 }
 
 int
-platform_screenshot_save(const char* path) {
+x_screenshot_save(const char* path) {
     BITMAPFILEHEADER fileHeader = {0};
 
     int dataSize = state.game->width * state.game->height * 4;
-    fileHeader.bfType = 0x4D42; // "BM"
+    fileHeader.bfType = 0x4D42;
     fileHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
     fileHeader.bfSize = fileHeader.bfOffBits + dataSize;
 
@@ -184,21 +185,24 @@ platform_screenshot_save(const char* path) {
     return 1;
 }
 
-void platform_term() {
+void
+x_term() {
     DestroyWindow(state.handle);
     state.handle = 0;
 }
 
-double platform_get_time() {
+double
+x_get_time() {
     return state.time_passed;
 }
 
 float
-platform_time_frame_get() {
+x_time_frame_get() {
     return state.time_frame;
 }
 
-void platform_pump_msg() {
+void
+x_pump_msg() {
     input_pre_update();
 
     MSG message;
@@ -210,37 +214,72 @@ void platform_pump_msg() {
     input_update();
 }
 
-void *platform_alloc(uint64_t size, uint8_t aligned) { return malloc(size); }
+void*
+x_alloc(uint64_t size,
+        uint8_t aligned) {
+    void* mem = malloc(size);
+    V_ASSERT(mem);
+    return mem;
+}
 
-void platform_free(void *block, uint8_t aligned) { return free(block); }
+void
+x_free(void *block,
+       uint8_t aligned) {
+    V_ASSERT(block);
+    return free(block);
+}
 
-void *platform_mem_zero(void *block, uint64_t size) {
+void*
+x_realloc(void* block,
+          uint64_t size,
+          uint8_t aligned) {
+    V_ASSERT(block);
+    void* mem = realloc(block, size);
+    V_ASSERT(mem);
+    return mem;
+}
+
+void*
+x_mem_zero(void *block,
+           uint64_t size) {
+    V_ASSERT(block);
     return memset(block, 0, size);
 }
 
-void *platform_mem_copy(void *dst, const void *src, uint64_t size) {
+void*
+x_mem_copy(void *dst,
+           const void *src,
+           uint64_t size) {
+    V_ASSERT(dst);
+    V_ASSERT(src);
     return memcpy(dst, src, size);
 }
 
-void *platform_mem_set(void *dst, int32_t value, uint64_t size) {
+void*
+x_mem_set(void *dst,
+          int32_t value,
+          uint64_t size) {
+    V_ASSERT(dst);
     return memset(dst, value, size);
 }
 
-double platform_get_absolute_time() {
+double
+x_get_absolute_time() {
     LARGE_INTEGER time;
     QueryPerformanceCounter(&time);
     return (double)time.QuadPart * clock_frequency;
 }
 
 uint64_t
-platform_raw_time_get() {
+x_raw_time_get() {
     LARGE_INTEGER time;
     QueryPerformanceCounter(&time);
     return time.QuadPart;
 }
 
 void
-platform_mouse_position_get(int* x, int* y) {
+x_mouse_position_get(int* x,
+                        int* y) {
     POINT pt;
     GetCursorPos(&pt);
     *x = pt.x - state.window_x;
@@ -248,17 +287,19 @@ platform_mouse_position_get(int* x, int* y) {
 }
 
 void
-platform_time_scale_set(float scale) {
+x_time_scale_set(float scale) {
     state.time_scale = scale;
 }
 
-const uint8_t colors[] = {FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED,
-                          FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED,
-                          FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,
-                          FOREGROUND_RED | FOREGROUND_INTENSITY};
+const uint8_t colors[] = { FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED,
+                           FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED,
+                           FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,
+                           FOREGROUND_RED | FOREGROUND_INTENSITY };
 
-void platform_console_write(const char *msg, uint32_t msg_length,
-                            uint8_t color_index) {
+void
+x_console_write(const char *msg,
+                   uint32_t msg_length,
+                   uint8_t color_index) {
     HANDLE console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(console_handle, colors[color_index]);
     OutputDebugStringA(msg);
@@ -267,8 +308,11 @@ void platform_console_write(const char *msg, uint32_t msg_length,
     SetConsoleTextAttribute(console_handle, colors[0]);
 }
 
-LRESULT CALLBACK win32_process_msg(HWND window, uint32_t msg, WPARAM w_param,
-                                   LPARAM l_param) {
+LRESULT CALLBACK
+win32_process_msg(HWND window,
+                  uint32_t msg,
+                  WPARAM w_param,
+                  LPARAM l_param) {
     if (w_param == SC_KEYMENU && (l_param >> 16) <= 0)
         return false;
 
@@ -287,7 +331,7 @@ LRESULT CALLBACK win32_process_msg(HWND window, uint32_t msg, WPARAM w_param,
     } break;
 
     case WM_CLOSE: {
-        b_event_dispatch(GAME_QUIT);
+        b_event_dispatch(APP_QUIT);
         return false;
     } break;
 
@@ -336,45 +380,59 @@ LRESULT CALLBACK win32_process_msg(HWND window, uint32_t msg, WPARAM w_param,
 }
 
 void
-platform_window_position_get(int* x, int* y) {
+x_window_position_get(int* x,
+                         int* y) {
     *x = state.window_x;
     *y = state.window_y;
 }
 
 void
-platform_window_position_set(int x, int y) {
+x_window_position_set(int x,
+                         int y) {
     state.window_x = x;
     state.window_y = y;
     state.window_dirty = 1;
 }
 
-void on_quit() { state.is_running = false; }
+void on_quit() {
+    state.is_running = false;
+}
 
-static char text_buffer[128] = {0};
-static int frame = 0;
-
-int main(int argc, char** argv) {
-    b_event_register(GAME_QUIT, &on_quit);
-    input_init();
+int
+main(int argc,
+     char** argv) {
+    b_event_register(APP_QUIT, &on_quit);
     const char* path = 0;
     if (argc > 1) {
         path = argv[1];
     }
+
+    /* @todo the app should provide to the platform what it wants and platform tries to initialize */
     state.game = g_init(path);
-    platform_init("Xeno", 0, 0, state.game->width, state.game->height);
+
+    int width = state.game->width;
+    int height = state.game->width;
+
+    /* @todo make buffers created by game flags */
+    state.game->color = x_alloc(sizeof(unsigned int) * width * height, 0);
+    state.game->depth = x_alloc(sizeof(float) * width * height, 0);
+
+    input_init();
+
+    x_init("Xeno", 0, 0, state.game->width, state.game->height);
     state.is_running = true;
     double frame_time = 1.0 / state.game->target_fps;
-    state.time_start = platform_get_absolute_time();
+    state.time_start = x_get_absolute_time();
     state.time_passed = 0.0;
     state.time_scale = 1.0;
     state.time_frame = 0.0f;
     timeBeginPeriod(1);
     while (state.is_running) {
-        double start_time = platform_get_absolute_time();
+        double start_time = x_get_absolute_time();
         LARGE_INTEGER start, now;
         QueryPerformanceCounter(&start);
 
-        platform_pump_msg();
+        x_pump_msg();
         g_update(state.time_frame);
 
         if (state.window_dirty) {
@@ -382,7 +440,6 @@ int main(int argc, char** argv) {
             SetWindowPos(state.handle, HWND_TOP, state.window_x, state.window_y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         }
 
-        // Set up a BITMAPINFO describing the framebuffer
         HDC hdc = GetDC(state.handle);
         SetDIBitsToDevice(hdc, 0, 0, state.game->width, state.game->height, 0, 0, 0,
             state.game->height, state.game->color, &state.bmi,
@@ -391,7 +448,7 @@ int main(int argc, char** argv) {
 
 #ifdef ENABLE_SREC
         sprintf(text_buffer, ".scr/demo_%d.bmp", frame++);
-        platform_screenshot_save(text_buffer);
+        x_screenshot_save(text_buffer);
 #endif
 
         do {
@@ -400,19 +457,47 @@ int main(int argc, char** argv) {
             double remaining = frame_time - elapsed;
 
             if (remaining > 0.002) {
-                Sleep(1); // coarse sleep
+                Sleep(1); /* coarse sleep */
             } else if (remaining > 0) {
-                // busy spin for sub-ms accuracy
+                /* busy spin for sub-ms accuracy */
             } else {
-                break; // over budget, skip sleep
+                break; /* over budget, skip sleep */
             }
         } while (1);
 
-        double end_time = platform_get_absolute_time();
+        double end_time = x_get_absolute_time();
         state.time_frame = end_time - start_time;
         state.time_passed += state.time_frame * state.time_scale;
     }
     g_term();
-    platform_term();
+    x_term();
+    if (state.game->color) x_free(state.game->color, 0);
+    if (state.game->depth) x_free(state.game->depth, 0);
     return 0;
+}
+
+uint64_t
+x_file_size(const char* file_path) {
+    FILE* f = fopen(file_path, "rb");
+    V_ASSERT(f);
+
+    fseek(f, 0, SEEK_END);
+    uint64_t size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    fclose(f);
+
+    return size;
+}
+
+uint8_t*
+x_file_read(const char* file_path, uint8_t* buffer, uint64_t size) {
+    FILE* f = fopen(file_path, "rb");
+    V_ASSERT(f);
+
+    size_t read = fread(buffer, 1, size, f);
+    fclose(f);
+    V_ASSERT(read == size);
+
+    return buffer;
 }

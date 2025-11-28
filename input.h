@@ -25,7 +25,6 @@ int input_get_button_up(button_code_t button);
 int input_get_button(button_code_t button);
 void input_get_mouse_pos(int32_t* out_x, int32_t* out_y);
 int input_get_char(char* ch);
-void platform_mouse_position_get(int32_t* out_x, int32_t* out_y);
 uint64_t input_keys_get(int idx);
 
 #endif
